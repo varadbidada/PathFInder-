@@ -81,11 +81,32 @@ function ResultsPanel() {
     .filter(Boolean)
 
   const handleExportPDF = async () => {
-    if (!reportRef.current) return
-    const canvas = await html2canvas(reportRef.current, { backgroundColor: '#0f0f1a', scale: 1.5 })
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width / 1.5, canvas.height / 1.5] })
-    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width / 1.5, canvas.height / 1.5)
-    pdf.save(`Pathfinder_Report_${recommended_branch}.pdf`)
+    try {
+      if (!reportRef.current) return
+      
+      const btn = document.getElementById('export-pdf-btn');
+      if (btn) btn.innerText = "⏳ Generating...";
+
+      const canvas = await html2canvas(reportRef.current, { 
+        backgroundColor: '#0f0f1a', 
+        scale: 1.5,
+        useCORS: true,
+        logging: false
+      })
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width / 1.5, canvas.height / 1.5] })
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width / 1.5, canvas.height / 1.5)
+      pdf.save(`Pathfinder_Report_${recommended_branch}.pdf`)
+      
+      if (btn) btn.innerText = "📄 Export PDF";
+    } catch (err) {
+      console.error("PDF Export failed:", err)
+      const btn = document.getElementById('export-pdf-btn');
+      if (btn) btn.innerText = "📄 Export PDF";
+      
+      // Fallback to native print dialog
+      alert("Advanced PDF generation failed (likely due to strict browser security). Falling back to standard browser print...");
+      window.print();
+    }
   }
 
   return (
@@ -148,6 +169,7 @@ function ResultsPanel() {
             </button>
           )}
           <button
+            id="export-pdf-btn"
             onClick={handleExportPDF}
             className="px-4 py-2 rounded-xl border border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/10 text-sm font-semibold transition-all"
           >

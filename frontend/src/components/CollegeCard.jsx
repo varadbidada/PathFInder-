@@ -5,43 +5,49 @@ import useCounsellorStore from '../store/counsellorStore'
 function RedditModal({ college, onClose }) {
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div className="bg-slate-950 rounded-3xl p-8 max-w-lg w-full border border-[#ff4500]/30 shadow-2xl relative overflow-y-auto max-h-[90vh]">
+            <div className="bg-slate-950 rounded-3xl p-6 max-w-lg w-full border border-[#ff4500]/30 shadow-2xl relative flex flex-col max-h-[90vh]">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-[#ff4500]/20 rounded-full blur-3xl pointer-events-none" />
                 
-                <div className="flex justify-between items-center mb-6 relative z-10">
-                    <h2 className="text-xl font-bold flex items-center gap-2">
-                        <span className="text-[#ff4500]">Reddit</span> 
-                        <span className="text-slate-300 text-sm font-medium border-l border-slate-700 pl-2">Insights</span>
-                    </h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-200 transition-colors text-xl">✕</button>
-                </div>
-                
-                <div className="mb-6 relative z-10">
-                    <h3 className="text-lg font-bold text-slate-100 mb-1">{college.name}</h3>
-                    <p className="text-xs text-slate-400">AI summarized from real student discussions</p>
+                {/* Fixed Header */}
+                <div className="flex-shrink-0 relative z-10 mb-4">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold flex items-center gap-2">
+                            <span className="text-[#ff4500]">Reddit</span> 
+                            <span className="text-slate-300 text-sm font-medium border-l border-slate-700 pl-2">Insights</span>
+                        </h2>
+                        <button onClick={onClose} className="text-slate-400 hover:text-slate-200 transition-colors text-xl">✕</button>
+                    </div>
+                    
+                    <div>
+                        <h3 className="text-lg font-bold text-slate-100 mb-1">{college.name}</h3>
+                        <p className="text-xs text-slate-400">AI summarized from real student discussions</p>
+                    </div>
                 </div>
 
-                <ul className="space-y-4 relative z-10">
-                    {college.reddit_insights.map((bullet, i) => {
-                        const cleanBullet = bullet.replace(/^•\s*/, '');
-                        const urlMatch = cleanBullet.match(/(https?:\/\/[^\s]+)/);
-                        
-                        return (
-                            <li key={i} className="flex items-start gap-3 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
-                                <span className="text-[#ff4500] shrink-0 text-sm">{urlMatch ? '🔗' : '💡'}</span>
-                                <span className="text-sm text-slate-200 leading-relaxed font-medium break-all">
-                                    {urlMatch ? (
-                                        <a href={urlMatch[0]} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2">
-                                            {cleanBullet.replace('Source:', 'Source').trim()}
-                                        </a>
-                                    ) : (
-                                        cleanBullet
-                                    )}
-                                </span>
-                            </li>
-                        )
-                    })}
-                </ul>
+                {/* Scrollable Content */}
+                <div className="overflow-y-auto pr-2 relative z-10 custom-scrollbar">
+                    <ul className="space-y-4">
+                        {college.reddit_insights.map((bullet, i) => {
+                            const cleanBullet = bullet.replace(/^•\s*/, '');
+                            const urlMatch = cleanBullet.match(/(https?:\/\/[^\s]+)/);
+                            
+                            return (
+                                <li key={i} className="flex items-start gap-3 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
+                                    <span className="text-[#ff4500] shrink-0 text-sm">{urlMatch ? '🔗' : '💡'}</span>
+                                    <span className="text-sm text-slate-200 leading-relaxed font-medium break-all">
+                                        {urlMatch ? (
+                                            <a href={urlMatch[0]} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2">
+                                                {cleanBullet.replace('Source:', 'Source').trim()}
+                                            </a>
+                                        ) : (
+                                            cleanBullet
+                                        )}
+                                    </span>
+                                </li>
+                            )
+                        })}
+                    </ul>
+                </div>
             </div>
         </div>
     )
