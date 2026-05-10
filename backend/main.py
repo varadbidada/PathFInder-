@@ -28,7 +28,6 @@ from engines.recommendation import recommend, get_available_branches
 from engines.question_engine import (
     select_next_question,
     should_trigger_tie_breaker,
-    advance_category,
     get_questions_for_category,
 )
 from services.ai_service import (
@@ -332,26 +331,6 @@ async def chat(request: Request, body: ChatRequest):
     _update_branch_scores(profile, result)
     profile.recommended_branch = result.top_branch
     profile.risk_level = signals.Risk_Level  # type: ignore[assignment]
-
-    # ── Advance category ──────────────────────────────────────────────────
-    if category not in profile.categories_completed:
-        profile.categories_completed.append(category)
-        advance_category(profile)
-
-    # ── Score-aware category skipping ─────────────────────────────────────
-    # If signals are already very clear after 2+ profiling questions,
-    # skip remaining INTEREST/APTITUDE and move to practical questions
-    if (result.confidence > settings.confidence_threshold
-            and profile.current_category in ("INTEREST", "APTITUDE")
-            and len(profile.categories_completed) >= 2):
-        if profile.rank is None and "RANK" not in profile.categories_completed:
-            profile.current_category = "RANK"
-        elif profile.budget_lakh is None and "BUDGET" not in profile.categories_completed:
-            profile.current_category = "BUDGET"
-        elif not profile.preferred_location and "LOCATION" not in profile.categories_completed:
-            profile.current_category = "LOCATION"
-        else:
-            profile.current_category = "CONFIRMATION"
 
     # ── Check for tie-breaker ─────────────────────────────────────────────
     if should_trigger_tie_breaker(profile, result.is_tied):

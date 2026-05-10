@@ -63,6 +63,10 @@ def select_next_question(profile: UserProfile) -> Optional[dict]:
     if unasked:
         return unasked[0]
 
+    # Mark current category as completed since we have exhausted its questions
+    if category not in profile.categories_completed:
+        profile.categories_completed.append(category)
+
     # Advance to next category
     try:
         current_idx = CATEGORY_ORDER.index(category)  # type: ignore[arg-type]
