@@ -40,6 +40,7 @@ class UserProfile(BaseModel):
     messages: list[Message] = Field(default_factory=list)
     current_category: QuestionCategory = "INTEREST"
     categories_completed: list[str] = Field(default_factory=list)
+    asked_question_ids: list[str] = Field(default_factory=list)
     tie_breaker_rounds: int = 0
     is_complete: bool = False
 

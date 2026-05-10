@@ -66,18 +66,6 @@
         "follow_up": true
     },
     {
-        "id": "TIE_001",
-        "category": "TIE_BREAKER",
-        "text": "Your scores are close between two branches! Let's narrow it down: imagine yourself 5 years into your career. Which project would make you prouder — building software that millions use, or designing a physical structure or machine that people can see and touch?",
-        "follow_up": false
-    },
-    {
-        "id": "TIE_002",
-        "category": "TIE_BREAKER",
-        "text": "Imagine a group project: one team builds a robot's brain (software/AI), another builds its physical body (mechanical/circuits). Which team excites you more to join, and why?",
-        "follow_up": false
-    },
-    {
         "id": "CONF_001",
         "category": "CONFIRMATION",
         "text": "Here's what I've understood about you so far. I'll now generate your personalised college recommendations based on your profile. Does anything look incorrect that you'd like to update before I finalise?",

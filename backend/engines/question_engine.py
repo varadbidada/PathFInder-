@@ -53,12 +53,9 @@ def select_next_question(profile: UserProfile) -> Optional[dict]:
                 category = next_cat
                 break
 
-    # Check if we've already asked a question from this category
-    asked_ids = {m.content for m in profile.messages if m.role == "assistant"}
     candidates = get_questions_for_category(category, follow_up=False)
-
     # Filter to unasked questions
-    unasked = [q for q in candidates if q["text"] not in asked_ids]
+    unasked = [q for q in candidates if q["id"] not in profile.asked_question_ids]
 
     if unasked:
         return unasked[0]
@@ -67,13 +64,7 @@ def select_next_question(profile: UserProfile) -> Optional[dict]:
     if category not in profile.categories_completed:
         profile.categories_completed.append(category)
 
-    # Advance to next category
-    try:
-        current_idx = CATEGORY_ORDER.index(category)  # type: ignore[arg-type]
-    except ValueError:
-        return None
-
-    for next_category in CATEGORY_ORDER[current_idx + 1:]:
+    for next_category in CATEGORY_ORDER:
         # Skip TIE_BREAKER unless triggered
         if next_category == "TIE_BREAKER" and profile.tie_breaker_rounds == 0:
             continue

@@ -67,14 +67,14 @@ class Settings(BaseSettings):
 
     # ── Branch Weights ───────────────────────────────────────────────────────
     SIGNAL_BRANCH_MAP: dict = {
-        "Logical_Thinking":  {"CS": 2.5, "Electronics": 1.5},
-        "Creativity":        {"CS": 1.0, "Civil": 2.0, "Mechanical": 1.5},
-        "Manual_Work":       {"Mechanical": 2.5, "Civil": 2.0},
-        "Spatial_Awareness": {"Civil": 2.5, "Mechanical": 1.5},
+        "Logical_Thinking":  {"CS": 3.0, "Electronics": 2.0},
+        "Creativity":        {"Civil": 2.0, "Mechanical": 1.5},
+        "Manual_Work":       {"Mechanical": 3.0, "Civil": 2.0, "Electronics": 1.0},
+        "Spatial_Awareness": {"Civil": 2.5, "Mechanical": 2.0},
         "Biology_Interest":  {"Medical": 3.0},
-        "Problem_Solving":   {"CS": 2.0, "Electronics": 2.0},
-        "Communication":     {"CS": 0.5, "Civil": 1.0},
-        "Math_Aptitude":     {"CS": 1.5, "Electronics": 2.0, "Mechanical": 1.5},
+        "Problem_Solving":   {"CS": 2.5, "Electronics": 2.0, "Mechanical": 1.0},
+        "Communication":     {"Civil": 1.0},
+        "Math_Aptitude":     {"CS": 2.0, "Electronics": 2.5, "Mechanical": 1.0},
     }
 
 

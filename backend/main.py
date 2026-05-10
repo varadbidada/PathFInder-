@@ -415,6 +415,7 @@ async def chat(request: Request, body: ChatRequest):
             )
             assistant_msg = f"{ai_reply}\n\n{profile_summary}"
     elif next_q:
+        profile.asked_question_ids.append(next_q["id"])
         assistant_msg = await generate_counsellor_response(
             question=next_q["text"],
             conversation_history=profile.get_conversation_text(last_n=4),
