@@ -48,6 +48,7 @@ async def fetch_college_insights(college_name: str) -> str:
             results = []
             for submission in reddit.subreddit("all").search(query, limit=3, time_filter="year"):
                 results.append(f"Title: {submission.title}")
+                results.append(f"URL: https://reddit.com{submission.permalink}")
                 if submission.selftext:
                     results.append(f"Post: {submission.selftext[:500]}")
                 submission.comments.replace_more(limit=0)

@@ -81,27 +81,15 @@ function ResultsPanel() {
     .filter(Boolean)
 
   const handleExportPDF = async () => {
-    // If not on recommendations tab, the ref won't exist. Temporarily switch tabs if needed.
-    const originalTab = tab
-    if (tab !== 'recommendations') {
-      setTab('recommendations')
-      // Wait for React to render the recommendations DOM
-      await new Promise(r => setTimeout(r, 100))
-    }
-
     if (!reportRef.current) return
     const canvas = await html2canvas(reportRef.current, { backgroundColor: '#0f0f1a', scale: 1.5 })
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width / 1.5, canvas.height / 1.5] })
     pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width / 1.5, canvas.height / 1.5)
     pdf.save(`Pathfinder_Report_${recommended_branch}.pdf`)
-    
-    if (originalTab !== 'recommendations') {
-      setTab(originalTab)
-    }
   }
 
   return (
-    <div className="flex flex-col gap-6 mt-2">
+    <div className="flex flex-col gap-6 mt-2" ref={reportRef}>
       {/* Summary Banner */}
       <div className="glass rounded-2xl p-6 border border-indigo-500/20">
         <div className="flex flex-wrap items-start gap-4 justify-between">
@@ -200,7 +188,7 @@ function ResultsPanel() {
       )}
 
       {tab === 'recommendations' && (
-        <div ref={reportRef}>
+        <div>
           {['Dream', 'Moderate', 'Safe'].map((tier) => {
             const tierColleges = colleges?.[tier] || []
             if (tierColleges.length === 0) return null

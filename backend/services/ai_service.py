@@ -240,12 +240,13 @@ async def summarize_reddit_insights(college_name: str, raw_text: str) -> list[st
 
 {raw_text[:3000]}
 
-Summarize in exactly 3 bullet points:
+Summarize in exactly 3 SHORT, PUNCHY bullet points (maximum 10-12 words per bullet):
 1. Overall student sentiment
 2. Placement quality and opportunities
 3. Campus life and facilities
 
-Return ONLY the 3 bullet points, each on a new line starting with '• '"""
+Append a 4th bullet point containing exactly one primary Source URL from the text.
+Return ONLY the 4 bullet points, each on a new line starting with '• '"""
 
     try:
         client = _get_client()
@@ -257,7 +258,7 @@ Return ONLY the 3 bullet points, each on a new line starting with '• '"""
         )
         text = response.choices[0].message.content
         bullets = [line.strip() for line in text.strip().split('\n') if line.strip().startswith('•')]
-        return bullets[:3]
+        return bullets[:4]
     except Exception as e:
         logger.error(f"Reddit summarization failed: {e}")
         return []
