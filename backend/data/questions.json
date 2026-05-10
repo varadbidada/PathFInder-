@@ -1,0 +1,92 @@
+[
+    {
+        "id": "INT_001",
+        "category": "INTEREST",
+        "text": "What gets you most excited? Tell me about your hobbies, a subject you love, or what your dream career looks like.",
+        "follow_up": false
+    },
+    {
+        "id": "INT_002",
+        "category": "INTEREST",
+        "text": "If you had to pick one sector to work in — technology, construction/infrastructure, manufacturing, healthcare, or electronics — which feels most natural and why?",
+        "follow_up": false
+    },
+    {
+        "id": "APT_001",
+        "category": "APTITUDE",
+        "text": "How would you describe your thinking style? Do you prefer solving abstract logical puzzles, building or repairing physical things, or coming up with creative designs and ideas?",
+        "follow_up": false
+    },
+    {
+        "id": "APT_002",
+        "category": "APTITUDE",
+        "text": "In school, which subjects have you scored best in? Also, do you enjoy working with your hands — like assembling gadgets, sketching models, or doing lab experiments?",
+        "follow_up": false
+    },
+    {
+        "id": "APT_003",
+        "category": "APTITUDE",
+        "text": "When you face a tough problem, do you usually break it down step-by-step logically, brainstorm creative solutions, or prefer to learn by doing and experimenting?",
+        "follow_up": false
+    },
+    {
+        "id": "RANK_001",
+        "category": "RANK",
+        "text": "What is your JEE Main rank or percentile? If you have JEE Advanced rank, share that too. Alternatively, if you've appeared for a state entrance exam, please share your rank and exam name.",
+        "follow_up": false
+    },
+    {
+        "id": "RANK_002",
+        "category": "RANK",
+        "text": "Great! Are you targeting JEE Advanced or NIT/state colleges? And is your rank from 2024 or an earlier attempt?",
+        "follow_up": true
+    },
+    {
+        "id": "BUDGET_001",
+        "category": "BUDGET",
+        "text": "What is your family's annual budget for college fees? Choose the range that fits best: under ₹2 lakh/year, ₹2–5 lakh/year, or above ₹5 lakh/year.",
+        "follow_up": false
+    },
+    {
+        "id": "BUDGET_002",
+        "category": "BUDGET",
+        "text": "Would you consider education loans or scholarships to attend a premium college, or is the budget a hard constraint?",
+        "follow_up": true
+    },
+    {
+        "id": "LOC_001",
+        "category": "LOCATION",
+        "text": "Do you have a preferred state or city for college? Are you open to relocating anywhere in India, or do you have restrictions (staying close to home, specific state quotas, etc.)?",
+        "follow_up": false
+    },
+    {
+        "id": "LOC_002",
+        "category": "LOCATION",
+        "text": "Are there any states or regions you'd prefer to avoid? For example, language barriers or family constraints.",
+        "follow_up": true
+    },
+    {
+        "id": "TIE_001",
+        "category": "TIE_BREAKER",
+        "text": "Your scores are close between two branches. Let's narrow it down: if you imagine yourself 5 years into your career, which project would make you prouder — building software that millions use, or designing a physical structure or machine that people can see and touch?",
+        "follow_up": false
+    },
+    {
+        "id": "TIE_002",
+        "category": "TIE_BREAKER",
+        "text": "Imagine a group project: one team builds a robot's brain (software/AI), another builds its physical body (mechanical/circuits). Which team excites you more to join, and why?",
+        "follow_up": false
+    },
+    {
+        "id": "CONF_001",
+        "category": "CONFIRMATION",
+        "text": "Here's what I've understood about you so far. I'll now generate your personalised college recommendations based on your profile. Does anything look incorrect that you'd like to update before I finalise?",
+        "follow_up": false
+    },
+    {
+        "id": "CONF_002",
+        "category": "CONFIRMATION",
+        "text": "Based on your answers, I'm ready to show you your college list across Safe, Moderate, and Dream tiers. Type 'yes' to proceed or share any corrections!",
+        "follow_up": false
+    }
+]
