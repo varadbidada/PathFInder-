@@ -50,11 +50,13 @@
 | ⚙️ **Rule Engine** | Deterministic weighted scoring across 5 branches — CS, Electronics, Mechanical, Civil, Medical — with configurable signal-to-branch weight maps |
 | 🔀 **Dynamic Questions** | Skips questions if the user already provided the info; injects AI-generated tie-breaker questions when top-2 branch scores are within 15% |
 | 🎓 **College Classifier** | Classifies 700+ colleges into Dream / Moderate / Safe tiers against the student's JEE/State rank, filtered by budget and location |
+| 📍 **Smart Location Backfill** | Strict location matching with automatic "Other Region" backfill if there are <5 colleges in your preferred state |
+| 📝 **Manual Overrides** | AI detects when the user explicitly forces a branch change during confirmation, cleanly overwriting the exponential moving average |
 | 📊 **Live Score Sidebar** | Real-time branch confidence meter updating as the chat progresses |
 | 🎛️ **What-If Simulator** | Drag a rank slider to see how college tier options change dynamically |
-| ⚖️ **Compare Mode** | Side-by-side comparison of any two recommended colleges |
-| 📋 **Option Entry List** | Priority-ordered choice list for counselling option entry |
-| 📄 **PDF Export** | Export the full report as a PDF via html2canvas + jsPDF |
+| ⚖️ **Compare Mode** | Side-by-side comparison of any number of recommended colleges |
+| 📋 **Option Entry List** | Priority-ordered choice list generated specifically for JOSAA/KCET counselling option entry |
+| 📄 **PDF Export** | Export the full dynamic report as a high-quality PDF via html2canvas + jsPDF |
 | 🔴 **Reddit Insights** | Real student reviews fetched (PRAW) and summarized (Groq) per college |
 
 ---

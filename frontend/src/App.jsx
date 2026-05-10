@@ -7,46 +7,47 @@ import ScoreSidebar from './components/ScoreSidebar'
 import CollegeCard from './components/CollegeCard'
 import WhatIfSlider from './components/WhatIfSlider'
 import InitialForm from './components/InitialForm'
-import jsPDF from 'jspdf'
+import { jsPDF } from 'jspdf'
 import html2canvas from 'html2canvas'
 
 // ── Compare Modal ───────────────────────────────────────────────────────────
 function CompareModal({ colleges, onClose }) {
-  const [a, b] = colleges
-  if (!a || !b) return null
+  if (!colleges || colleges.length === 0) return null
 
   const fields = [
-    { label: 'Branch', keyA: () => a.branch, keyB: () => b.branch },
-    { label: 'Location', keyA: () => a.location, keyB: () => b.location },
-    { label: 'Cutoff Rank', keyA: () => `#${a.cutoff_rank?.toLocaleString()}`, keyB: () => `#${b.cutoff_rank?.toLocaleString()}` },
-    { label: 'Annual Fees', keyA: () => a.annual_fees, keyB: () => b.annual_fees },
-    { label: 'Avg Package', keyA: () => a.placement_avg, keyB: () => b.placement_avg },
-    { label: 'Accreditation', keyA: () => a.accreditation, keyB: () => b.accreditation },
-    { label: 'Tier', keyA: () => a.tier, keyB: () => b.tier },
+    { label: 'Branch', val: (c) => c.branch },
+    { label: 'Location', val: (c) => c.location },
+    { label: 'Cutoff Rank', val: (c) => `#${c.cutoff_rank?.toLocaleString()}` },
+    { label: 'Annual Fees', val: (c) => `₹${(c.annual_fees / 100000).toFixed(2)}L` },
+    { label: 'Avg Package', val: (c) => `₹${(c.placement_avg / 100000).toFixed(2)}L` },
+    { label: 'Accreditation', val: (c) => c.accreditation },
+    { label: 'Tier', val: (c) => c.tier },
   ]
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="glass rounded-3xl p-8 max-w-3xl w-full border border-indigo-500/30 shadow-2xl">
+      <div className="glass rounded-3xl p-8 max-w-5xl w-full border border-indigo-500/30 shadow-2xl">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold gradient-text">Compare Colleges</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-200 transition-colors text-xl">✕</button>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-max">
             <thead>
               <tr>
                 <th className="text-left text-slate-500 pb-4 pr-4 font-medium w-32">Feature</th>
-                <th className="text-center pb-4 px-4 text-indigo-300 font-semibold">{a.name}</th>
-                <th className="text-center pb-4 px-4 text-violet-300 font-semibold">{b.name}</th>
+                {colleges.map((c, i) => (
+                  <th key={c.id} className={`text-center pb-4 px-4 font-semibold ${i % 2 === 0 ? 'text-indigo-300' : 'text-violet-300'}`}>{c.name}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {fields.map(({ label, keyA, keyB }) => (
+              {fields.map(({ label, val }) => (
                 <tr key={label} className="border-t border-slate-800">
                   <td className="py-3 pr-4 text-slate-500 font-medium">{label}</td>
-                  <td className="py-3 px-4 text-center text-slate-200">{keyA()}</td>
-                  <td className="py-3 px-4 text-center text-slate-200">{keyB()}</td>
+                  {colleges.map(c => (
+                    <td key={c.id} className="py-3 px-4 text-center text-slate-200">{val(c)}</td>
+                  ))}
                 </tr>
               ))}
             </tbody>
@@ -80,11 +81,23 @@ function ResultsPanel() {
     .filter(Boolean)
 
   const handleExportPDF = async () => {
+    // If not on recommendations tab, the ref won't exist. Temporarily switch tabs if needed.
+    const originalTab = tab
+    if (tab !== 'recommendations') {
+      setTab('recommendations')
+      // Wait for React to render the recommendations DOM
+      await new Promise(r => setTimeout(r, 100))
+    }
+
     if (!reportRef.current) return
     const canvas = await html2canvas(reportRef.current, { backgroundColor: '#0f0f1a', scale: 1.5 })
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width / 1.5, canvas.height / 1.5] })
     pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width / 1.5, canvas.height / 1.5)
     pdf.save(`Pathfinder_Report_${recommended_branch}.pdf`)
+    
+    if (originalTab !== 'recommendations') {
+      setTab(originalTab)
+    }
   }
 
   return (
@@ -130,7 +143,7 @@ function ResultsPanel() {
           ))}
         </div>
         <div className="flex gap-2">
-          {selectedForCompare.length === 2 && (
+          {selectedForCompare.length >= 2 && (
             <button
               onClick={() => setCompareOpen(true)}
               className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold transition-all"
@@ -214,7 +227,7 @@ function ResultsPanel() {
         </div>
       )}
 
-      {compareOpen && compareColleges.length === 2 && (
+      {compareOpen && compareColleges.length >= 2 && (
         <CompareModal colleges={compareColleges} onClose={() => setCompareOpen(false)} />
       )}
     </div>

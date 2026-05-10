@@ -26,9 +26,16 @@ def build_branch_summary(result: ScoreResult) -> str:
     conf = result.confidence
 
     quality = "very strong" if score > 0.8 else "strong" if score > 0.6 else "moderate"
+    
+    if result.is_tied:
+        return (
+            f"**Tie Detected (Confidence: {conf:.0%})**\n"
+            f"{result.explanation}"
+        )
+    
     return (
-        f"Your profile shows a **{quality} aptitude for {top} Engineering** "
-        f"(score: {score:.0%}, confidence: {conf:.0%}). {result.explanation}"
+        f"**{quality.title()} Aptitude for {top} Engineering** (Confidence: {conf:.0%})\n"
+        f"{result.explanation}"
     )
 
 
@@ -74,6 +81,16 @@ def build_counselling_report(
         "second_branch": result.second_branch if result.is_tied else None,
         "colleges": grouped,
         "total_colleges": len(recommendations),
+        "option_entry_list": [
+            {
+                "id": c.id,
+                "name": c.name,
+                "branch": c.branch,
+                "location": c.location,
+                "tier": c.recommendation_tier
+            }
+            for c in recommendations
+        ]
     }
 
 

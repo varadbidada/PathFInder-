@@ -207,20 +207,51 @@ async def health_check():
 @limiter.limit(f"{settings.rate_limit_per_minute}/minute")
 async def start_session(request: Request):
     """Create a new counselling session and return the first question."""
+    # Parse optional form data from InitialForm
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
     profile = UserProfile()
+
+    # Pre-populate profile from InitialForm data
+    rank = body.get("jee_rank") or body.get("kcet_rank") or body.get("neet_rank")
+    if rank is not None:
+        try:
+            profile.rank = int(rank)
+            profile.categories_completed.append("RANK")
+        except (ValueError, TypeError):
+            pass
+
+    budget = body.get("budget_lakh")
+    if budget is not None:
+        try:
+            profile.budget_lakh = float(budget)
+            profile.categories_completed.append("BUDGET")
+        except (ValueError, TypeError):
+            pass
+
+    location = body.get("preferred_location")
+    if location and str(location).strip():
+        profile.preferred_location = str(location).strip()
+        profile.categories_completed.append("LOCATION")
+
     sessions[profile.session_id] = profile
 
     first_q = select_next_question(profile)
     first_question_text = first_q["text"] if first_q else "Tell me about yourself!"
 
+    skipped = len(profile.categories_completed)
     welcome = (
-        "👋 Hi! I'm Pathfinder, your AI career counsellor. I'll ask you a few questions "
-        "to figure out the best engineering branch and colleges for you. Let's start!"
+        "👋 Hi! I'm Pathfinder, your AI career counsellor. "
+        + (f"Thanks for sharing your details upfront — I've saved your {'rank, ' if profile.rank else ''}{'budget, ' if profile.budget_lakh else ''}{'location ' if profile.preferred_location else ''}info. " if skipped > 0 else "")
+        + "I'll ask you a few questions to figure out the best engineering branch and colleges for you. Let's start!"
     )
     profile.add_message("assistant", welcome)
     profile.add_message("assistant", first_question_text)
 
-    logger.info({"event": "session_start", "session_id": profile.session_id})
+    logger.info({"event": "session_start", "session_id": profile.session_id, "prefilled": profile.categories_completed})
     return StartSessionResponse(
         session_id=profile.session_id,
         first_question=first_question_text,
@@ -240,24 +271,50 @@ async def chat(request: Request, body: ChatRequest):
 
     profile.add_message("user", user_text)
 
-    # ── Extract contextual data based on current category ─────────────────
+    # ── Extract contextual data from ANY message ──────────────────────────
+    # Rank and budget are extracted regardless of current category so that
+    # info-dense messages like "rank 45000, budget 5L" are captured early.
     category = profile.current_category
 
-    if category == "RANK" and profile.rank is None:
+    if profile.rank is None:
         rank = _extract_rank(user_text)
         if rank:
             profile.rank = rank
+            if "RANK" not in profile.categories_completed:
+                profile.categories_completed.append("RANK")
 
-    if category == "BUDGET" and profile.budget_lakh is None:
+    if profile.budget_lakh is None:
         budget = _extract_budget(user_text)
         if budget:
             profile.budget_lakh = budget
+            if "BUDGET" not in profile.categories_completed:
+                profile.categories_completed.append("BUDGET")
 
     if category == "LOCATION" and not profile.preferred_location:
-        # Naive: use the first meaningful word chunk as location
         words = [w for w in user_text.split() if len(w) > 3]
         if words:
             profile.preferred_location = words[0].title()
+            if "LOCATION" not in profile.categories_completed:
+                profile.categories_completed.append("LOCATION")
+
+    forced_override = False
+    if category == "CONFIRMATION":
+        text_lower = user_text.lower()
+        if any(w in text_lower for w in ["cs", "computer", "cse"]):
+            profile.cumulative_signals = {"Logical_Thinking": 1.0, "Math_Aptitude": 1.0, "Problem_Solving": 1.0}
+            forced_override = True
+        elif any(w in text_lower for w in ["electronic", "ece", "eee"]):
+            profile.cumulative_signals = {"Math_Aptitude": 1.0, "Manual_Work": 1.0}
+            forced_override = True
+        elif any(w in text_lower for w in ["mechanic", "mech"]):
+            profile.cumulative_signals = {"Manual_Work": 1.0, "Spatial_Awareness": 1.0}
+            forced_override = True
+        elif "civil" in text_lower:
+            profile.cumulative_signals = {"Spatial_Awareness": 1.0, "Creativity": 1.0}
+            forced_override = True
+        elif any(w in text_lower for w in ["medic", "doctor", "mbbs"]):
+            profile.cumulative_signals = {"Biology_Interest": 1.0}
+            forced_override = True
 
     # ── Extract AI signals ────────────────────────────────────────────────
     last_assistant = next(
@@ -280,6 +337,21 @@ async def chat(request: Request, body: ChatRequest):
     if category not in profile.categories_completed:
         profile.categories_completed.append(category)
         advance_category(profile)
+
+    # ── Score-aware category skipping ─────────────────────────────────────
+    # If signals are already very clear after 2+ profiling questions,
+    # skip remaining INTEREST/APTITUDE and move to practical questions
+    if (result.confidence > settings.confidence_threshold
+            and profile.current_category in ("INTEREST", "APTITUDE")
+            and len(profile.categories_completed) >= 2):
+        if profile.rank is None and "RANK" not in profile.categories_completed:
+            profile.current_category = "RANK"
+        elif profile.budget_lakh is None and "BUDGET" not in profile.categories_completed:
+            profile.current_category = "BUDGET"
+        elif not profile.preferred_location and "LOCATION" not in profile.categories_completed:
+            profile.current_category = "LOCATION"
+        else:
+            profile.current_category = "CONFIRMATION"
 
     # ── Check for tie-breaker ─────────────────────────────────────────────
     if should_trigger_tie_breaker(profile, result.is_tied):
@@ -313,15 +385,15 @@ async def chat(request: Request, body: ChatRequest):
             preferred_location=profile.preferred_location,
         )
 
-        # Enrich with Reddit insights (best-effort)
+        # Enrich with Reddit insights (best-effort, logged on failure)
         for college_rec in recommendations[:6]:  # Only enrich top 6
             try:
                 raw_text = await fetch_college_insights(college_rec.name)
                 if raw_text:
                     bullets = await summarize_reddit_insights(college_rec.name, raw_text)
                     college_rec.reddit_insights = bullets
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Reddit enrichment failed for {college_rec.name}: {e}")
 
         report = build_counselling_report(profile, result, recommendations)
         profile.is_complete = True
@@ -350,8 +422,19 @@ async def chat(request: Request, body: ChatRequest):
     profile_summary: Optional[str] = None
 
     if is_confirmation:
+        # If they made a correction, re-evaluate to get updated top_branch
+        result = evaluate(profile.cumulative_signals)
         profile_summary = build_profile_summary(profile, result)
-        assistant_msg = profile_summary
+        
+        if forced_override:
+            assistant_msg = f"Got it, I've manually updated your best-fit branch! Please review the updated profile below.\n\n{profile_summary}"
+        else:
+            # Generate a conversational acknowledgement, but append the summary so it's strictly visible.
+            ai_reply = await generate_counsellor_response(
+                question="Please review the updated summary and confirm if it is correct by typing 'yes'.",
+                conversation_history=profile.get_conversation_text(last_n=4),
+            )
+            assistant_msg = f"{ai_reply}\n\n{profile_summary}"
     elif next_q:
         assistant_msg = await generate_counsellor_response(
             question=next_q["text"],

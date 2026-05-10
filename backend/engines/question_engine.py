@@ -39,6 +39,20 @@ def select_next_question(profile: UserProfile) -> Optional[dict]:
 
     category = profile.current_category
 
+    # If the current category was pre-filled (e.g. from InitialForm), skip it
+    if category in profile.categories_completed and category not in ("INTEREST", "APTITUDE", "CONFIRMATION"):
+        try:
+            current_idx = CATEGORY_ORDER.index(category)  # type: ignore[arg-type]
+        except ValueError:
+            return None
+        for next_cat in CATEGORY_ORDER[current_idx + 1:]:
+            if next_cat == "TIE_BREAKER" and profile.tie_breaker_rounds == 0:
+                continue
+            if next_cat not in profile.categories_completed or next_cat in ("INTEREST", "APTITUDE", "CONFIRMATION"):
+                profile.current_category = next_cat  # type: ignore[assignment]
+                category = next_cat
+                break
+
     # Check if we've already asked a question from this category
     asked_ids = {m.content for m in profile.messages if m.role == "assistant"}
     candidates = get_questions_for_category(category, follow_up=False)
@@ -59,6 +73,9 @@ def select_next_question(profile: UserProfile) -> Optional[dict]:
         # Skip TIE_BREAKER unless triggered
         if next_category == "TIE_BREAKER" and profile.tie_breaker_rounds == 0:
             continue
+        # Skip categories already completed (pre-filled from form)
+        if next_category in profile.categories_completed and next_category not in ("CONFIRMATION",):
+            continue
         next_qs = get_questions_for_category(next_category, follow_up=False)
         if next_qs:
             profile.current_category = next_category  # type: ignore[assignment]
@@ -71,14 +88,21 @@ def select_next_question(profile: UserProfile) -> Optional[dict]:
 
 
 def advance_category(profile: UserProfile) -> None:
-    """Move to the next question category in sequence."""
+    """Move to the next question category in sequence, skipping pre-completed ones."""
     try:
         idx = CATEGORY_ORDER.index(profile.current_category)  # type: ignore[arg-type]
     except ValueError:
         return
-    if idx + 1 < len(CATEGORY_ORDER):
-        profile.current_category = CATEGORY_ORDER[idx + 1]  # type: ignore[assignment]
-    profile.categories_completed.append(profile.current_category)
+    # Skip forward past already-completed categories (e.g. RANK/BUDGET from form)
+    for next_idx in range(idx + 1, len(CATEGORY_ORDER)):
+        next_cat = CATEGORY_ORDER[next_idx]
+        if next_cat == "TIE_BREAKER" and profile.tie_breaker_rounds == 0:
+            continue
+        if next_cat not in profile.categories_completed or next_cat == "CONFIRMATION":
+            profile.current_category = next_cat  # type: ignore[assignment]
+            break
+    if profile.current_category not in profile.categories_completed:
+        profile.categories_completed.append(profile.current_category)
 
 
 def should_trigger_tie_breaker(profile: UserProfile, is_tied: bool) -> bool:
