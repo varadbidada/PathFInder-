@@ -46,6 +46,7 @@ class UserProfile(BaseModel):
 
     # Extracted data
     rank: Optional[int] = None
+    exam_type: Literal["jee_main", "jee_advanced"] = "jee_main"  # Exam type for rank
     budget_lakh: Optional[float] = None  # Annual budget in lakhs
     preferred_location: Optional[str] = None
     branch_scores: BranchScores = Field(default_factory=BranchScores)

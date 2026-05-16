@@ -1,98 +1,162 @@
 // store/counsellorStore.js — Zustand global state
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+// No persistence - clean restart every time
+import { create } from "zustand";
+
+// Logging middleware for debugging state changes
+const logMiddleware = (config) => (set, get, api) =>
+  config(
+    (...args) => {
+      console.log("[STORE] State update:", args[0]);
+      set(...args);
+    },
+    get,
+    api,
+  );
 
 const useCounsellorStore = create(
-    persist(
-        (set, get) => ({
-            // Session state
-            sessionId: null,
-            messages: [],
-            branchScores: { CS: 0, Electronics: 0, Mechanical: 0, Civil: 0, Medical: 0 },
-            overallConfidence: 0,
-            currentCategory: 'INTEREST',
-            isComplete: false,
-            isLoading: false,
+  logMiddleware((set, get) => ({
+    // Session state
+    sessionId: null,
+    messages: [],
+    branchScores: {
+      CS: 0,
+      Electronics: 0,
+      Mechanical: 0,
+      Civil: 0,
+      Medical: 0,
+    },
+    overallConfidence: 0,
+    currentCategory: "INTEREST",
+    isComplete: false,
+    isLoading: false,
 
-            // Results
-            report: null,
-            profileSummary: null,
-            hypotheticalRank: null,
-            whatIfColleges: null,
+    // Results
+    report: null,
+    profileSummary: null,
+    hypotheticalRank: null,
+    whatIfColleges: null,
 
-            // Compare mode
-            compareMode: false,
-            selectedForCompare: [],
+    // Compare mode
+    compareMode: false,
+    selectedForCompare: [],
 
-            // Actions
-            setSessionId: (id) => set({ sessionId: id }),
+    // Actions
+    setSessionId: (id) => {
+      const currentId = get().sessionId;
 
-            addMessage: (msg) =>
-                set((state) => ({ messages: [...state.messages, msg] })),
+      if (currentId === id) {
+        console.warn("[STORE] Session ID already set to:", id);
+        return;
+      }
 
-            setMessages: (messages) => set({ messages }),
+      console.log("[STORE] Setting session ID:", id);
+      set({ sessionId: id });
+    },
 
-            updateFromResponse: (data) =>
-                set({
-                    branchScores: data.branch_scores || get().branchScores,
-                    overallConfidence: data.overall_confidence ?? get().overallConfidence,
-                    currentCategory: data.current_category || get().currentCategory,
-                    isComplete: data.is_complete ?? false,
-                    report: data.report || get().report,
-                    profileSummary: data.profile_summary || get().profileSummary,
-                }),
+    addMessage: (msg) => {
+      const state = get();
 
-            setLoading: (v) => set({ isLoading: v }),
+      // Prevent duplicate messages with same timestamp
+      const isDuplicate = state.messages.some(
+        (m) =>
+          m.ts === msg.ts && m.content === msg.content && m.role === msg.role,
+      );
 
-            setReport: (report) => set({ report }),
+      if (isDuplicate) {
+        console.warn(
+          "[STORE] Duplicate message detected, skipping:",
+          msg.content.substring(0, 50),
+        );
+        return;
+      }
 
-            setWhatIf: (rank, colleges) =>
-                set({ hypotheticalRank: rank, whatIfColleges: colleges }),
+      console.log(
+        "[STORE] Adding message:",
+        msg.role,
+        msg.content.substring(0, 50),
+      );
+      set((state) => ({ messages: [...state.messages, msg] }));
+    },
 
-            toggleCompare: (collegeId) =>
-                set((state) => {
-                    const sel = state.selectedForCompare
-                    if (sel.includes(collegeId)) {
-                        return { selectedForCompare: sel.filter((id) => id !== collegeId) }
-                    }
-                    if (sel.length >= 2) return state
-                    return { selectedForCompare: [...sel, collegeId] }
-                }),
+    setMessages: (messages) => set({ messages }),
 
-            clearCompare: () => set({ selectedForCompare: [], compareMode: false }),
+    updateFromResponse: (data) =>
+      set({
+        branchScores: data.branch_scores || get().branchScores,
+        overallConfidence: data.overall_confidence ?? get().overallConfidence,
+        currentCategory: data.current_category || get().currentCategory,
+        isComplete: data.is_complete ?? false,
+        report: data.report || get().report,
+        profileSummary: data.profile_summary || get().profileSummary,
+      }),
 
-            setCompareMode: (v) => set({ compareMode: v }),
+    setLoading: (v) => set({ isLoading: v }),
 
-            resetSession: () =>
-                set({
-                    sessionId: null,
-                    messages: [],
-                    branchScores: { CS: 0, Electronics: 0, Mechanical: 0, Civil: 0, Medical: 0 },
-                    overallConfidence: 0,
-                    currentCategory: 'INTEREST',
-                    isComplete: false,
-                    isLoading: false,
-                    report: null,
-                    profileSummary: null,
-                    hypotheticalRank: null,
-                    whatIfColleges: null,
-                    compareMode: false,
-                    selectedForCompare: [],
-                }),
-        }),
-        {
-            name: 'pathfinder-session',
-            partialize: (state) => ({
-                sessionId: state.sessionId,
-                messages: state.messages,
-                branchScores: state.branchScores,
-                overallConfidence: state.overallConfidence,
-                currentCategory: state.currentCategory,
-                isComplete: state.isComplete,
-                report: state.report,
-            }),
+    setReport: (report) => set({ report }),
+
+    setWhatIf: (rank, colleges) =>
+      set({ hypotheticalRank: rank, whatIfColleges: colleges }),
+
+    toggleCompare: (collegeId) =>
+      set((state) => {
+        const sel = state.selectedForCompare;
+        if (sel.includes(collegeId)) {
+          return { selectedForCompare: sel.filter((id) => id !== collegeId) };
         }
-    )
-)
+        if (sel.length >= 2) return state;
+        return { selectedForCompare: [...sel, collegeId] };
+      }),
 
-export default useCounsellorStore
+    clearCompare: () => set({ selectedForCompare: [], compareMode: false }),
+
+    setCompareMode: (v) => set({ compareMode: v }),
+
+    resetSession: () => {
+      console.log("[STORE] Resetting session - clearing ALL state");
+      set({
+        sessionId: null,
+        messages: [],
+        branchScores: {
+          CS: 0,
+          Electronics: 0,
+          Mechanical: 0,
+          Civil: 0,
+          Medical: 0,
+        },
+        overallConfidence: 0,
+        currentCategory: "INTEREST",
+        isComplete: false,
+        isLoading: false,
+        report: null,
+        profileSummary: null,
+        hypotheticalRank: null,
+        whatIfColleges: null,
+        compareMode: false,
+        selectedForCompare: [],
+      });
+      console.log("[STORE] Session reset complete");
+    },
+
+    // Debug method to verify clean state
+    verifyCleanState: () => {
+      const state = get();
+      const issues = [];
+
+      if (state.sessionId !== null) issues.push("sessionId not null");
+      if (state.messages.length > 0)
+        issues.push(`${state.messages.length} messages remain`);
+      if (state.isComplete) issues.push("isComplete still true");
+      if (state.report !== null) issues.push("report not cleared");
+
+      if (issues.length > 0) {
+        console.error("[STORE] State NOT clean after reset:", issues);
+        return false;
+      }
+
+      console.log("[STORE] State verified clean ✓");
+      return true;
+    },
+  })),
+);
+
+export default useCounsellorStore;

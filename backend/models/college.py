@@ -15,6 +15,7 @@ class College(BaseModel):
     name: str
     branch: str
     cutoff_rank: int
+    rank_type: str = "jee_main"  # "jee_advanced" for IITs, "jee_main" for NITs/IIITs/GFTIs
     annual_fees: int  # in INR
     location: str
     tier: CollegeTier
@@ -39,3 +40,5 @@ class CollegeRecommendation(College):
     reddit_insights: list[str] = Field(default_factory=list)
     reddit_summary: Optional[str] = None
     rank_gap: int = 0  # positive = student rank is better (safer), negative = riskier
+    cutoff_source: str = "historical_average"  # "ml_prediction_2025" or "historical_average"
+    low_confidence: bool = False  # True if ML prediction has high uncertainty

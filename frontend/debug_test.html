@@ -1,0 +1,173 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Pathfinder Debug Test</title>
+    <style>
+      body {
+        font-family: monospace;
+        padding: 20px;
+        background: #1a1a1a;
+        color: #fff;
+      }
+      .test {
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid #333;
+      }
+      .success {
+        border-color: #0f0;
+      }
+      .error {
+        border-color: #f00;
+      }
+      button {
+        padding: 10px;
+        margin: 5px;
+        background: #333;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+      }
+      pre {
+        background: #222;
+        padding: 10px;
+        overflow: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🐛 Pathfinder Debug Test</h1>
+
+    <div id="results"></div>
+
+    <button onclick="testBackend()">Test Backend Health</button>
+    <button onclick="testLLM()">Test LLM Status</button>
+    <button onclick="testSession()">Test Session Creation</button>
+    <button onclick="testChat()">Test Chat</button>
+    <button onclick="runAllTests()">Run All Tests</button>
+
+    <script>
+      const API_BASE = "http://127.0.0.1:8000";
+      let currentSessionId = null;
+
+      function log(message, isError = false) {
+        const div = document.createElement("div");
+        div.className = `test ${isError ? "error" : "success"}`;
+        div.innerHTML = message;
+        document.getElementById("results").appendChild(div);
+      }
+
+      async function testBackend() {
+        try {
+          const response = await fetch(`${API_BASE}/health`);
+          const data = await response.json();
+          log(`✅ Backend Health: ${response.status} - ${data.status}`);
+          return true;
+        } catch (error) {
+          log(`❌ Backend Health: ${error.message}`, true);
+          return false;
+        }
+      }
+
+      async function testLLM() {
+        try {
+          const response = await fetch(`${API_BASE}/api/llm-status`);
+          const data = await response.json();
+          log(`✅ LLM Status: ${data.active_provider} - ${data.active_model}`);
+          return true;
+        } catch (error) {
+          log(`❌ LLM Status: ${error.message}`, true);
+          return false;
+        }
+      }
+
+      async function testSession() {
+        try {
+          const response = await fetch(`${API_BASE}/session/start`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              jee_rank: 5000,
+              budget_lakh: 3.0,
+              preferred_location: "Test",
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          currentSessionId = data.session_id;
+          log(`✅ Session Created: ${data.session_id.substring(0, 20)}...`);
+          log(`   First Question: ${data.first_question.substring(0, 100)}...`);
+          return true;
+        } catch (error) {
+          log(`❌ Session Creation: ${error.message}`, true);
+          return false;
+        }
+      }
+
+      async function testChat() {
+        if (!currentSessionId) {
+          log(`❌ Chat Test: No session ID. Run session test first.`, true);
+          return false;
+        }
+
+        try {
+          log(`⏳ Testing chat (may take 10-20 seconds for Ollama)...`);
+
+          const response = await fetch(`${API_BASE}/chat`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              session_id: currentSessionId,
+              user_message: "I love programming and building software",
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          log(`✅ Chat Working: ${data.question_text.substring(0, 100)}...`);
+          log(`   Used Reactive: ${data.used_reactive}`);
+          log(`   Branch Scores: ${JSON.stringify(data.branch_scores)}`);
+          return true;
+        } catch (error) {
+          log(`❌ Chat Test: ${error.message}`, true);
+          return false;
+        }
+      }
+
+      async function runAllTests() {
+        document.getElementById("results").innerHTML = "";
+        log("🧪 Running All Tests...");
+
+        const backendOk = await testBackend();
+        if (!backendOk) return;
+
+        await testLLM();
+
+        const sessionOk = await testSession();
+        if (!sessionOk) return;
+
+        await testChat();
+
+        log("🎉 All tests completed!");
+      }
+
+      // Auto-run tests on load
+      window.onload = () => {
+        log(
+          "🚀 Debug test page loaded. Click buttons to test individual components.",
+        );
+      };
+    </script>
+  </body>
+</html>

@@ -1,0 +1,122 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Test Frontend Fix</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: #f0f0f0;
+      }
+      .result {
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 5px;
+      }
+      .success {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+      }
+      .error {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 10px 0;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🧪 Frontend API Fix Test</h1>
+    <p>Testing if the frontend can now connect to backend properly...</p>
+
+    <button onclick="testSessionCreation()">Test Session Creation</button>
+    <div id="results"></div>
+
+    <script>
+      function log(message, isError = false) {
+        const div = document.createElement("div");
+        div.className = `result ${isError ? "error" : "success"}`;
+        div.innerHTML = message;
+        document.getElementById("results").appendChild(div);
+      }
+
+      async function testSessionCreation() {
+        document.getElementById("results").innerHTML = "";
+        log("🧪 Testing session creation...");
+
+        try {
+          // Test the exact same call the frontend makes
+          const response = await fetch("http://127.0.0.1:8000/session/start", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              jee_rank: 5000,
+              budget_lakh: 3.0,
+              preferred_location: "Test Location",
+            }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            log(
+              `✅ SUCCESS: Session created with ID: ${data.session_id.substring(0, 20)}...`,
+            );
+            log(
+              `📝 First question: ${data.first_question.substring(0, 100)}...`,
+            );
+
+            // Test chat
+            log("🧪 Testing chat...");
+            const chatResponse = await fetch("http://127.0.0.1:8000/chat", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                session_id: data.session_id,
+                user_message: "I love programming and solving problems",
+              }),
+            });
+
+            if (chatResponse.ok) {
+              const chatData = await chatResponse.json();
+              log(
+                `✅ CHAT SUCCESS: ${chatData.question_text.substring(0, 100)}...`,
+              );
+              log(`🤖 Used reactive AI: ${chatData.used_reactive}`);
+              log(`🎯 The frontend should now work properly!`);
+            } else {
+              log(
+                `❌ Chat failed: ${chatResponse.status} ${chatResponse.statusText}`,
+                true,
+              );
+            }
+          } else {
+            log(
+              `❌ Session creation failed: ${response.status} ${response.statusText}`,
+              true,
+            );
+          }
+        } catch (error) {
+          log(`❌ Error: ${error.message}`, true);
+        }
+      }
+
+      // Auto-test on load
+      window.onload = () => {
+        log("🚀 Ready to test. Click the button above.");
+      };
+    </script>
+  </body>
+</html>

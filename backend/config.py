@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     reddit_client_secret: str = ""
     reddit_user_agent: str = "Pathfinder/1.0"
 
+    # ── Twitter / X ──────────────────────────────────────────────────────────
+    twitter_bearer_token: str = ""          # Twitter API v2 Bearer Token
+    twitter_target_tweets: int = 200        # Minimum tweets to scrape per college
+    twitter_cache_ttl_seconds: int = 86_400 # 24 hours
+
     # ── Serper ───────────────────────────────────────────────────────────────
     serper_api_key: str = ""
 
