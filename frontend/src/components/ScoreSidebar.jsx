@@ -40,6 +40,14 @@ export default function ScoreSidebar() {
         CONFIRMATION: '✅ Confirming',
     }
 
+    const prettyCategory =
+        categoryLabels[currentCategory] ||
+        currentCategory
+            .toLowerCase()
+            .split('_')
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(' ')
+
     return (
         <aside className="w-72 flex flex-col gap-6 p-5">
             {/* Header */}
@@ -80,7 +88,7 @@ export default function ScoreSidebar() {
             <div className="glass rounded-2xl p-4">
                 <p className="text-xs text-slate-500 uppercase tracking-widest mb-2">Current Stage</p>
                 <p className="text-sm font-semibold text-indigo-300">
-                    {categoryLabels[currentCategory] || currentCategory}
+                    {prettyCategory}
                 </p>
                 <div className="mt-3 flex gap-1">
                     {['INTEREST', 'APTITUDE', 'RANK', 'BUDGET', 'LOCATION', 'CONFIRMATION'].map((cat, i) => (

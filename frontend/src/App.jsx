@@ -107,6 +107,8 @@ function ResultsPanel() {
     student_rank,
     total_colleges,
     confidence,
+    top_branches,
+    trait_breakdown,
   } = report;
 
   const allColleges = [
@@ -195,6 +197,61 @@ function ResultsPanel() {
                 </span>
               ))}
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="glass rounded-2xl p-5 border border-slate-800/70">
+          <p className="text-xs text-slate-500 uppercase tracking-widest mb-3">
+            Top Branches
+          </p>
+          <div className="flex flex-col gap-3">
+            {(top_branches || []).map((item, index) => (
+              <div
+                key={item.branch}
+                className="flex items-center justify-between rounded-xl bg-slate-900/50 px-4 py-3 border border-slate-800"
+              >
+                <div>
+                  <p className="text-sm text-slate-500">#{index + 1}</p>
+                  <p className="text-sm font-semibold text-slate-200">
+                    {item.branch} Engineering
+                  </p>
+                </div>
+                <p className="text-lg font-bold text-indigo-300">
+                  {Math.round((item.score || 0) * 100)}%
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="glass rounded-2xl p-5 border border-slate-800/70">
+          <p className="text-xs text-slate-500 uppercase tracking-widest mb-3">
+            Trait Breakdown
+          </p>
+          <div className="flex flex-col gap-3">
+            {Object.entries(trait_breakdown || {})
+              .sort(([, a], [, b]) => b - a)
+              .slice(0, 6)
+              .map(([trait, score]) => (
+                <div key={trait}>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm text-slate-300 capitalize">
+                      {trait.replaceAll("_", " ")}
+                    </p>
+                    <p className="text-xs font-semibold text-slate-500">
+                      {Math.round(score * 100)}%
+                    </p>
+                  </div>
+                  <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400"
+                      style={{ width: `${Math.round(score * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
           </div>
         </div>
       </div>
