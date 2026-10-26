@@ -157,6 +157,68 @@ def call_llm(
     return ""
 
 
+def generate(
+    prompt: str,
+    system_prompt: str = "",
+    temperature: float = 0.7,
+    max_tokens: int = 800,
+    timeout_seconds: int = 30  # NEW: Add timeout
+) -> str:
+    """
+    Simple generate interface for LLM adaptive engine.
+    Returns plain text response (not parsed as JSON).
+    
+    Includes timeout to prevent hanging on slow responses.
+    """
+    import signal
+    
+    class TimeoutError(Exception):
+        pass
+    
+    def timeout_handler(signum, frame):
+        raise TimeoutError("LLM call timed out")
+    
+    # Set timeout (only works on Unix-like systems)
+    try:
+        signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(timeout_seconds)
+    except (AttributeError, ValueError):
+        # Windows doesn't support SIGALRM, skip timeout
+        pass
+    
+    try:
+        result = call_llm(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            expect_json=False,  # Return raw text, let caller parse
+            temperature=temperature,
+            max_tokens=max_tokens,
+            retries=1  # Reduced retries when using timeout
+        )
+        
+        # Cancel alarm
+        try:
+            signal.alarm(0)
+        except (AttributeError, ValueError):
+            pass
+        
+        # call_llm returns str when expect_json=False
+        return result if isinstance(result, str) else ""
+        
+    except TimeoutError:
+        logger.error(f"[LLM] Call timed out after {timeout_seconds} seconds")
+        return ""
+    except Exception as e:
+        logger.error(f"[LLM] Generate failed: {e}")
+        return ""
+    finally:
+        # Ensure alarm is cancelled
+        try:
+            signal.alarm(0)
+        except (AttributeError, ValueError):
+            pass
+
+
 def check_llm_health() -> dict:
     """Returns status of available LLM providers"""
     status = {

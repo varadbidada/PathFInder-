@@ -1,0 +1,132 @@
+{
+  "opener_questions": [
+    {
+      "id": "q_opener_1",
+      "stage": "personality",
+      "text": "If you had a completely free Saturday with no phone and no plans, what would you most likely end up doing?",
+      "type": "open",
+      "trait_targets": ["creativity", "hands_on", "social"],
+      "fixed": true
+    },
+    {
+      "id": "q_opener_2",
+      "stage": "personality",
+      "text": "In school, which subject made you feel like time was flying when you were deep in it?",
+      "type": "open",
+      "trait_targets": ["math_aptitude", "biology_interest", "creativity"],
+      "fixed": true
+    },
+    {
+      "id": "q_opener_3",
+      "stage": "personality",
+      "text": "When you picture yourself 10 years from now — not what you think you should say, but what actually excites you — what are you doing?",
+      "type": "open",
+      "trait_targets": ["risk_appetite", "social", "creativity"],
+      "fixed": true
+    }
+  ],
+  "stage_templates": {
+    "interest_probes": {
+      "description": "Explore student interests and curiosities beyond academics",
+      "example_questions": [
+        "You mentioned [X from their answer] — tell me more about that.",
+        "When something around you breaks or doesn't work, what do you do?",
+        "Maths problem or writing an essay — which one do you enjoy more?",
+        "Have you ever built or fixed something physical? What happened?",
+        "Do you prefer understanding why something works, or just that it works?",
+        "When you watch something on YouTube, what kind of content do you keep clicking?"
+      ]
+    },
+    "thinking_style": {
+      "description": "Understand how the student approaches problems and thinks",
+      "example_questions": [
+        "In a group project, what role do you usually end up taking?",
+        "If something confuses you, do you prefer to figure it out alone or ask someone?",
+        "When you're explaining something to a friend, do you draw it out or just talk?",
+        "Do you prefer tasks where there is one right answer, or tasks where anything goes?"
+      ]
+    },
+    "aversion_check": {
+      "description": "Identify what the student dislikes or wants to avoid",
+      "example_questions": [
+        "Is there any kind of work environment that would make you quit a job?",
+        "What part of your school day do you dread the most?",
+        "Would you rather work alone on a hard problem, or coordinate a team project?",
+        "Does the idea of memorising a lot of facts appeal to you or bother you?"
+      ]
+    },
+    "confirmation": {
+      "description": "Confirm the branch hypothesis with the student",
+      "example_questions": [
+        "Based on what you've told me, I think [branch] might suit you well. Does that feel right to you, or does something feel off?",
+        "Is there anything important about yourself I haven't asked yet that you think I should know?"
+      ]
+    }
+  },
+  "branch_profiles": {
+    "CS": {
+      "name": "Computer Science",
+      "description": "For logical thinkers who enjoy problem-solving, math, and patterns",
+      "ideal_traits": {
+        "logical_thinking": 0.75,
+        "problem_solving": 0.8,
+        "math_aptitude": 0.7,
+        "creativity": 0.65,
+        "hands_on": 0.3
+      }
+    },
+    "ECE": {
+      "name": "Electronics & Communication",
+      "description": "For those curious about how devices work, circuits, and signals",
+      "ideal_traits": {
+        "logical_thinking": 0.75,
+        "math_aptitude": 0.75,
+        "hands_on": 0.6,
+        "spatial_reasoning": 0.65,
+        "problem_solving": 0.7
+      }
+    },
+    "Mech": {
+      "name": "Mechanical Engineering",
+      "description": "For hands-on builders who enjoy physical systems and machines",
+      "ideal_traits": {
+        "hands_on": 0.8,
+        "spatial_reasoning": 0.75,
+        "math_aptitude": 0.65,
+        "problem_solving": 0.7,
+        "creativity": 0.6
+      }
+    },
+    "Civil": {
+      "name": "Civil Engineering",
+      "description": "For spatial thinkers interested in structures, design, and construction",
+      "ideal_traits": {
+        "spatial_reasoning": 0.8,
+        "hands_on": 0.65,
+        "math_aptitude": 0.65,
+        "creativity": 0.7,
+        "problem_solving": 0.65
+      }
+    },
+    "Chemical": {
+      "name": "Chemical Engineering",
+      "description": "For those interested in processes, transformations, and chemistry",
+      "ideal_traits": {
+        "biology_interest": 0.7,
+        "logical_thinking": 0.7,
+        "math_aptitude": 0.65,
+        "problem_solving": 0.7
+      }
+    },
+    "Bio-tech": {
+      "name": "Biotechnology",
+      "description": "For biology enthusiasts interested in medical and health applications",
+      "ideal_traits": {
+        "biology_interest": 0.85,
+        "logical_thinking": 0.65,
+        "problem_solving": 0.7,
+        "creativity": 0.6
+      }
+    }
+  }
+}

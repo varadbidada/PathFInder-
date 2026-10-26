@@ -58,6 +58,9 @@ class ChatMessage(BaseModel):
     confidence: Optional[float] = None
     category: Optional[str] = None
     
+    # LLM-powered adaptive engine: snapshot of student model after this turn
+    student_model_snapshot: Optional[dict[str, Any]] = None
+    
     class Config:
         json_schema_extra = {
             "example": {
@@ -68,7 +71,12 @@ class ChatMessage(BaseModel):
                 "answer": "I love computer science and programming",
                 "branch_scores": {"CS": 0.8, "Electronics": 0.6},
                 "confidence": 0.75,
-                "category": "interest_assessment"
+                "category": "interest_assessment",
+                "student_model_snapshot": {
+                    "math_aptitude": 0.6,
+                    "logical_thinking": 0.7,
+                    "hands_on": 0.3
+                }
             }
         }
 

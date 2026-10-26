@@ -1,80 +1,42 @@
-[
-    {
-        "id": "INT_001",
-        "category": "INTEREST",
-        "text": "Imagine it's a Saturday and you have the whole day free. Which of these would you most enjoy doing?\n\n- \ud83d\udda5\ufe0f Building a website or app\n- \ud83d\udd27 Taking apart a gadget to see how it works\n- \ud83c\udfd7\ufe0f Visiting a construction site or sketching a building design\n- \ud83d\udd2c Watching a biology documentary or doing a science experiment\n- \u26a1 Tinkering with circuits or electronics\n\nJust pick what feels most natural to you, or describe in your own words!",
-        "follow_up": false
-    },
-    {
-        "id": "INT_002",
-        "category": "INTEREST",
-        "text": "Think about your favourite YouTube channels or social media pages. Are they mostly about:\n\n- \ud83d\udcbb Tech, coding, or AI\n- \ud83c\udfce\ufe0f Cars, machines, or how things are made\n- \ud83c\udfe0 Architecture, city planning, or mega-structures\n- \ud83e\uddec Medicine, biology, or health\n- \ud83d\udcf1 Gadgets, electronics, or hardware reviews\n\nOr tell me what actually gets you excited — no wrong answers!",
-        "follow_up": false
-    },
-    {
-        "id": "APT_001",
-        "category": "APTITUDE",
-        "text": "In a school group project, which role do you naturally take?\n\n- \ud83e\udde0 The one who plans the logic and strategy\n- \ud83c\udfa8 The one who designs how it looks and feels\n- \ud83d\udee0\ufe0f The one who builds the physical model or prototype\n- \ud83d\udcca The one who does the research and calculations\n\nThere's no right answer — I just want to understand how you work!",
-        "follow_up": false
-    },
-    {
-        "id": "APT_002",
-        "category": "APTITUDE",
-        "text": "Here's a quick scenario: Your school is building a solar-powered robot for a competition. Which part excites you most?\n\n- \ud83d\udcbb Writing the code that makes it move and think\n- \u2699\ufe0f Designing the gears, wheels, and mechanical parts\n- \u26a1 Wiring the solar panels, sensors, and circuits\n- \ud83d\udcd0 Calculating the load capacity and structural design\n- \ud83e\udde5 Making it look sleek and user-friendly",
-        "follow_up": false
-    },
-    {
-        "id": "APT_003",
-        "category": "APTITUDE",
-        "text": "When you face a tough problem — say a challenging maths question or a broken gadget — what's your instinct?\n\n- \ud83d\udcdd Break it down step-by-step logically\n- \ud83d\udca1 Brainstorm creative, out-of-the-box solutions\n- \ud83d\udc50 Start experimenting and learn by doing\n- \ud83d\udcda Research online or ask someone who knows",
-        "follow_up": false
-    },
-    {
-        "id": "RANK_001",
-        "category": "RANK",
-        "text": "Now let's talk about your exam performance. What is your JEE Main rank or percentile? If you have JEE Advanced, KCET, or any state exam rank, share that too.\n\nDon't worry if you haven't appeared yet — just share your expected range!",
-        "follow_up": false
-    },
-    {
-        "id": "RANK_002",
-        "category": "RANK",
-        "text": "Got it! Are you targeting IITs (JEE Advanced) or NITs/state colleges? And is this rank from 2024–25 or an earlier attempt?",
-        "follow_up": true
-    },
-    {
-        "id": "BUDGET_001",
-        "category": "BUDGET",
-        "text": "What's your family's comfortable annual budget for college fees?\n\n- \ud83d\udfe2 Under ₹2 lakh/year (government colleges)\n- \ud83d\udfe1 ₹2–5 lakh/year (NITs, IIITs, some private)\n- \ud83d\udfe0 Above ₹5 lakh/year (BITS, VIT, Manipal, etc.)\n\nNo judgement here — great options exist at every budget!",
-        "follow_up": false
-    },
-    {
-        "id": "BUDGET_002",
-        "category": "BUDGET",
-        "text": "Would you consider education loans or scholarships to attend a premium college, or is the budget a hard constraint?",
-        "follow_up": true
-    },
-    {
-        "id": "LOC_001",
-        "category": "LOCATION",
-        "text": "Do you have a preferred state or city for college? Or are you open to relocating anywhere in India?\n\nSome students prefer staying close to home, others want a specific city. Just tell me what works for you!",
-        "follow_up": false
-    },
-    {
-        "id": "LOC_002",
-        "category": "LOCATION",
-        "text": "Are there any states or regions you'd prefer to avoid? For example, language barriers or family constraints.",
-        "follow_up": true
-    },
-    {
-        "id": "CONF_001",
-        "category": "CONFIRMATION",
-        "text": "Here's what I've understood about you so far. I'll now generate your personalised college recommendations based on your profile. Does anything look incorrect that you'd like to update before I finalise?",
-        "follow_up": false
-    },
-    {
-        "id": "CONF_002",
-        "category": "CONFIRMATION",
-        "text": "Based on your answers, I'm ready to show you your college list across Safe, Moderate, and Dream tiers. Type 'yes' to proceed or share any corrections!",
-        "follow_up": false
-    }
+﻿[
+  {
+    "id": "q_opener_1",
+    "stage": "personality",
+    "text": "If you had a completely free Saturday with no phone and no plans, what would you most likely end up doing?",
+    "type": "open",
+    "trait_targets": ["creativity", "hands_on", "social"],
+    "fixed": true
+  },
+  {
+    "id": "q_opener_2",
+    "stage": "personality",
+    "text": "In school, which subject made you feel like time was flying when you were deep in it?",
+    "type": "open",
+    "trait_targets": ["math_aptitude", "biology_interest", "creativity"],
+    "fixed": true
+  },
+  {
+    "id": "q_opener_3",
+    "stage": "personality",
+    "text": "When you picture yourself 10 years from now \u2014 not what you think you should say, but what actually excites you \u2014 what are you doing?",
+    "type": "open",
+    "trait_targets": ["risk_appetite", "social", "creativity"],
+    "fixed": true
+  },
+  {
+    "id": "q_confirm_1",
+    "stage": "confirmation",
+    "text": "Based on what you've told me, I think {{branch}} might suit you well. Does that feel right, or does something feel off?",
+    "type": "open",
+    "trait_targets": [],
+    "fixed": true
+  },
+  {
+    "id": "q_confirm_2",
+    "stage": "confirmation",
+    "text": "Is there anything important about yourself I haven't asked yet that you think I should know?",
+    "type": "open",
+    "trait_targets": [],
+    "fixed": true
+  }
 ]

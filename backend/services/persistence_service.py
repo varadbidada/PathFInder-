@@ -106,7 +106,8 @@ class PersistenceService:
         answer: str,
         branch_scores: Optional[dict[str, float]] = None,
         confidence: Optional[float] = None,
-        category: Optional[str] = None
+        category: Optional[str] = None,
+        student_model_snapshot: Optional[dict[str, Any]] = None
     ) -> str:
         """Save a question-answer exchange from the conversation."""
         self._ensure_repositories()
@@ -120,7 +121,8 @@ class PersistenceService:
             "timestamp": datetime.utcnow(),
             "branch_scores": branch_scores,
             "confidence": confidence,
-            "category": category
+            "category": category,
+            "student_model_snapshot": student_model_snapshot
         }
         
         return await self._chat_repo.save_chat_message(chat_data)

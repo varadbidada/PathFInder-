@@ -12,8 +12,13 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+# Import both engines
 from engines.adaptive_engine import AdaptiveQuestionEngine
+from engines.adaptive_engine_llm import LLMAdaptiveEngine
 from engines.recommendation import recommend
+
+# Import LLM client as a module to pass to LLM engine
+import services.llm_client as llm_client
 
 # MongoDB imports
 from database.connection import connect_to_database, close_database_connection, check_database_health
@@ -67,7 +72,10 @@ app.add_middleware(
 # Include persistence API routes
 app.include_router(persistence_router)
 
-engine = AdaptiveQuestionEngine()
+# Initialize engines
+deterministic_engine = AdaptiveQuestionEngine()
+llm_engine = LLMAdaptiveEngine()
+
 sessions: dict[str, dict[str, Any]] = {}
 
 
@@ -132,8 +140,16 @@ def build_college_report(session: dict[str, Any], recommended_branch: str | None
     if not recommended_branch:
         return colleges_by_tier, total_colleges
 
-    rank = session["engine_state"].get("rank")
-    exam_type = session["engine_state"].get("exam_type")
+    # Determine which engine was used
+    if "student_model" in session.get("engine_state", {}):
+        # LLM engine
+        rank = session["engine_state"].get("rank")
+        exam_type = session["engine_state"].get("exam_type")
+    else:
+        # Deterministic engine
+        rank = session["engine_state"].get("rank")
+        exam_type = session["engine_state"].get("exam_type")
+    
     if not rank or exam_type not in {"jee_main", "jee_advanced"}:
         return colleges_by_tier, total_colleges
 
@@ -173,9 +189,25 @@ def build_college_report(session: dict[str, Any], recommended_branch: str | None
     return colleges_by_tier, total_colleges
 
 
-def compose_final_report(session: dict[str, Any]) -> dict[str, Any]:
+def compose_final_report_deterministic(session: dict[str, Any]) -> dict[str, Any]:
+    """Compose report for deterministic engine."""
     engine_state = session["engine_state"]
-    engine_report = engine.build_report(engine_state)
+    engine_report = deterministic_engine.build_report(engine_state)
+    recommended_branch = engine_report.get("recommended_branch")
+    colleges_by_tier, total_colleges = build_college_report(session, recommended_branch)
+
+    return {
+        **engine_report,
+        "colleges": colleges_by_tier,
+        "total_colleges": total_colleges,
+        "student_rank": engine_state.get("rank"),
+    }
+
+
+def compose_final_report_llm(session: dict[str, Any]) -> dict[str, Any]:
+    """Compose report for LLM engine."""
+    engine_state = session["engine_state"]
+    engine_report = llm_engine.build_report(engine_state)
     recommended_branch = engine_report.get("recommended_branch")
     colleges_by_tier, total_colleges = build_college_report(session, recommended_branch)
 
@@ -203,18 +235,30 @@ async def health_check():
 
 @app.get("/api/llm-status")
 async def llm_status():
+    """Check LLM availability and decide which engine to use."""
+    health = llm_client.check_llm_health()
+    
+    # If LLM available, use LLM engine
+    if health.get("active_provider"):
+        return {
+            **health,
+            "recommended_engine": "llm",
+            "status": "working"
+        }
+    
+    # Otherwise fall back to deterministic
     return {
-        "groq": False,
-        "ollama": False,
-        "ollama_model": None,
+        **health,
+        "recommended_engine": "deterministic",
         "active_provider": "deterministic-engine",
         "active_model": "adaptive-question-engine",
-        "status": "working",
+        "status": "working (fallback)"
     }
 
 
 @app.post("/session/start", response_model=StartSessionResponse)
 async def start_session(request: Request):
+    """Start new counseling session. Auto-detects LLM availability."""
     try:
         body = await request.json()
     except Exception:
@@ -224,22 +268,40 @@ async def start_session(request: Request):
     exam_type = normalize_exam_type(body.get("exam_type"))
     rank = select_rank(body, exam_type)
 
-    engine_state = engine.create_session(
-        exam_type=exam_type,
-        rank=rank,
-        budget_lakh=body.get("budget_lakh"),
-        preferred_location=body.get("preferred_location"),
-    )
-    opening_question = engine.select_opening_question(engine_state)
+    # Check if LLM is available
+    llm_health = llm_client.check_llm_health()
+    use_llm = llm_health.get("active_provider") is not None
+    
+    # Choose engine based on LLM availability
+    if use_llm:
+        logger.info(f"🤖 Starting LLM-powered session with {llm_health['active_provider']}")
+        engine_state = llm_engine.create_session(
+            exam_type=exam_type,
+            rank=rank,
+            budget_lakh=body.get("budget_lakh"),
+            preferred_location=body.get("preferred_location"),
+        )
+        opening_question = llm_engine.select_opening_question(engine_state)
+        engine_type = "llm"
+    else:
+        logger.info("⚙️ Starting deterministic session (LLM unavailable)")
+        engine_state = deterministic_engine.create_session(
+            exam_type=exam_type,
+            rank=rank,
+            budget_lakh=body.get("budget_lakh"),
+            preferred_location=body.get("preferred_location"),
+        )
+        opening_question = deterministic_engine.select_opening_question(engine_state)
+        engine_type = "deterministic"
 
     sessions[session_id] = {
         "created_at": datetime.now(UTC).isoformat(),
         "engine_state": engine_state,
         "raw_form": body,
+        "engine_type": engine_type,  # Track which engine is being used
     }
 
     # ========== MongoDB Persistence ==========
-    # Persist session start and user profile
     user_id = extract_user_id_from_request(request, session_id)
     await persist_session_start(session_id, user_id, sessions[session_id])
     # =========================================
@@ -253,16 +315,18 @@ async def start_session(request: Request):
         prefilled_parts.append("location")
 
     welcome = (
-        "Hi! I'm Pathfinder. I'll use a structured adaptive question engine to estimate your best-fit engineering branch. "
-        + (
+        "Hi! I'm Pathfinder. " +
+        ("I'll ask you some questions to understand your interests and personality. " if use_llm else
+         "I'll use a structured adaptive question engine to estimate your best-fit engineering branch. ") +
+        (
             f"I've already saved your {', '.join(prefilled_parts)}. "
             if prefilled_parts
             else ""
-        )
-        + "Let's start with the most informative question."
+        ) +
+        "Let's start!"
     )
 
-    logger.info("Started adaptive session %s", session_id)
+    logger.info(f"Started {engine_type} session {session_id}")
     return StartSessionResponse(
         session_id=session_id,
         first_question=opening_question["text"],
@@ -272,6 +336,7 @@ async def start_session(request: Request):
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(body: ChatRequest, request: Request):
+    """Process chat message using appropriate engine."""
     user_text = sanitize_input(body.user_message)
     if not user_text:
         raise HTTPException(status_code=400, detail="Message cannot be empty.")
@@ -280,15 +345,46 @@ async def chat(body: ChatRequest, request: Request):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found. Please start a new session.")
 
-    # ========== MongoDB Persistence ==========
-    # Extract user_id for persistence
     user_id = extract_user_id_from_request(request, body.session_id)
-    # =========================================
+    engine_type = session.get("engine_type", "deterministic")
+    
+    # Process with appropriate engine
+    if engine_type == "llm":
+        result = llm_engine.process_answer(
+            session["engine_state"],
+            user_text,
+            llm_client  # Pass the module as client
+        )
+        
+        # Extract student_model snapshot for persistence
+        student_model_snapshot = result.get("student_model")
+        if student_model_snapshot and hasattr(student_model_snapshot, 'to_dict'):
+            student_model_snapshot = student_model_snapshot.to_dict()
+        elif isinstance(student_model_snapshot, dict):
+            pass  # Already a dict
+        else:
+            student_model_snapshot = None
+        
+        # Log trait coverage for debugging
+        if student_model_snapshot:
+            turn = session["engine_state"]["turn_number"]
+            uncovered = llm_engine.get_uncovered_traits(result["student_model"])
+            logger.info(f"[COVERAGE] Turn {turn}: {uncovered['total_uncovered']} uncovered traits")
+            logger.info(f"[COVERAGE] Numeric: {uncovered['numeric']}")
+            logger.info(f"[COVERAGE] Categorical: {uncovered['categorical']}")
+            logger.info(f"[CONFIDENCE] {result['confidence']:.2f} / 0.85 needed")
+            logger.info(f"[HYPOTHESIS] {result['student_model'].branch_hypothesis}")
+    else:
+        result = deterministic_engine.process_answer(session["engine_state"], user_text)
+        student_model_snapshot = None
 
-    result = engine.process_answer(session["engine_state"], user_text)
-
+    # Handle completion
     if result["is_complete"]:
-        report = compose_final_report(session)
+        if engine_type == "llm":
+            report = compose_final_report_llm(session)
+        else:
+            report = compose_final_report_deterministic(session)
+        
         recommended_branch = report.get("recommended_branch") or "a broad engineering path"
         assistant_message = (
             f"Based on your answers, {recommended_branch} is your strongest fit. "
@@ -297,8 +393,7 @@ async def chat(body: ChatRequest, request: Request):
         if report["total_colleges"] > 0:
             assistant_message += f" I also found {report['total_colleges']} matching colleges."
 
-        # ========== MongoDB Persistence ==========
-        # Persist the final exchange
+        # Persist final exchange
         await persist_chat_exchange(
             session_id=body.session_id,
             user_id=user_id,
@@ -306,9 +401,9 @@ async def chat(body: ChatRequest, request: Request):
             answer=assistant_message,
             branch_scores=result["branch_scores"],
             confidence=result["confidence"],
-            category="COMPLETED"
+            category="COMPLETED",
+            student_model_snapshot=student_model_snapshot
         )
-        # =========================================
 
         return ChatResponse(
             session_id=body.session_id,
@@ -323,10 +418,22 @@ async def chat(body: ChatRequest, request: Request):
             trait_breakdown=result["trait_breakdown"],
         )
 
+    # Continue conversation
     next_question = result["question"]
     
-    # ========== MongoDB Persistence ==========
-    # Persist the question-answer exchange
+    # Build debug info for LLM engine
+    debug_info = {}
+    if engine_type == "llm" and result.get("student_model"):
+        uncovered = llm_engine.get_uncovered_traits(result["student_model"])
+        debug_info = {
+            "turn": session["engine_state"]["turn_number"],
+            "uncovered_traits": uncovered,
+            "confidence": result["confidence"],
+            "hypothesis": result["student_model"].branch_hypothesis,
+            "target_trait": result.get("target_trait", "unknown")
+        }
+    
+    # Persist exchange
     await persist_chat_exchange(
         session_id=body.session_id,
         user_id=user_id,
@@ -334,21 +441,48 @@ async def chat(body: ChatRequest, request: Request):
         answer=next_question["text"],
         branch_scores=result["branch_scores"],
         confidence=result["confidence"],
-        category=session["engine_state"]["current_category"]
+        category=session["engine_state"].get("current_category", session["engine_state"].get("current_stage", "unknown")),
+        student_model_snapshot=student_model_snapshot
     )
-    # =========================================
     
-    return ChatResponse(
+    response_data = ChatResponse(
         session_id=body.session_id,
         assistant_message=next_question["text"],
         next_question=next_question["text"],
         branch_scores=result["branch_scores"],
         overall_confidence=result["confidence"],
-        current_category=session["engine_state"]["current_category"],
+        current_category=session["engine_state"].get("current_category", session["engine_state"].get("current_stage", "unknown")),
         is_complete=False,
         top_branches=result["top_branches"],
         trait_breakdown=result["trait_breakdown"],
     )
+    
+    # Add debug info if available
+    if debug_info:
+        response_data_dict = response_data.dict()
+        response_data_dict["debug"] = debug_info
+        return response_data_dict
+    
+    return response_data
+
+
+@app.get("/api/session/{session_id}/model")
+async def get_session_model(session_id: str):
+    """Get current student model for a session (LLM engine only)."""
+    session = sessions.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    if session.get("engine_type") != "llm":
+        raise HTTPException(status_code=400, detail="Student model only available for LLM-powered sessions")
+    
+    student_model = session["engine_state"].get("student_model")
+    if not student_model:
+        raise HTTPException(status_code=404, detail="Student model not found")
+    
+    if hasattr(student_model, 'to_dict'):
+        return student_model.to_dict()
+    return student_model
 
 
 @app.delete("/session/{session_id}")

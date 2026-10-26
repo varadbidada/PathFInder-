@@ -54,10 +54,12 @@ async def persist_chat_exchange(
     answer: str,
     branch_scores: Optional[dict[str, float]] = None,
     confidence: Optional[float] = None,
-    category: Optional[str] = None
+    category: Optional[str] = None,
+    student_model_snapshot: Optional[dict[str, Any]] = None
 ) -> None:
     """
     Persist a chat exchange (question-answer pair) to MongoDB.
+    Includes optional student_model_snapshot for LLM-powered engine.
     """
     try:
         if not user_id:
@@ -70,7 +72,8 @@ async def persist_chat_exchange(
             answer=answer,
             branch_scores=branch_scores,
             confidence=confidence,
-            category=category
+            category=category,
+            student_model_snapshot=student_model_snapshot
         )
         logger.info(f"✅ Persisted chat exchange for session: {session_id[:12]}...")
         
